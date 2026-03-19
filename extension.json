@@ -1,0 +1,41 @@
+{
+	"name": "eext-pcbtosch-tool",
+	"uuid": "eextpcbtoschtool0000wolf40960000",
+	"displayName": "PCB转原理图",
+	"description": "让反推原理图像Layout一样简单",
+	"version": "1.0.0",
+	"publisher": "",
+	"engines": {
+		"eda": "^3.0.0"
+	},
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "github",
+		"url": "https://github.com/WOLF4096/eext-pcbtosch-tool"
+	},
+	"categories": ["Schematic"],
+	"keywords": ["原理图"],
+	"images": {
+		"logo": "./images/logo.png"
+	},
+	"homepage": "https://github.com/WOLF4096/eext-pcbtosch-tool",
+	"bugs": "https://github.com/WOLF4096/eext-pcbtosch-tool/issues",
+	"activationEvents": {},
+	"entry": "./dist/index",
+	"dependentExtensions": {},
+	"headerMenus": {
+		"sch": [
+			{
+				"id": "LHPcbToSch",
+				"title": "PCB转原理图",
+				"menuItems": [
+					{
+						"id": "PcbToSch",
+						"title": "PCB转原理图",
+						"registerFn": "PcbToSch"
+					}
+				]
+			}
+		]
+	}
+}
