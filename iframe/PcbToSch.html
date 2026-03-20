@@ -180,10 +180,10 @@
 			version = eda.sys_Environment.getEditorCurrentVersion();
 			if (version.startsWith('2.2.')) {
 				versionSpan.textContent = `当前EDA版本：${version} 功能可用`;
-				// yvalueCheck.checked = false;
+				yvalueCheck.checked = false;
 			}else if(version.startsWith('3.')){
 				versionSpan.textContent = `当前EDA版本：${version} 功能可用`;
-				// yvalueCheck.checked = true;
+				yvalueCheck.checked = true;
 			}
 			versionSpan.style.color = '#8f8';
 		} catch (e) {
@@ -307,6 +307,9 @@
 				updateProgress(50, '查找对应的PCB');
 				const uuids = findUuids(projectJson, curDoc.uuid);
 				currentPcbUuid = projectJson.pcbs[uuids.pcbUuid];
+
+				console.log(projectJson.pcbs[uuids.pcbUuid],uuids.pcbUuid);
+
 				console.log('找到的UUIDs:', uuids);
 				currentSchematicUuid = uuids.schematicUuid;   // 存储原理图UUID
 				await delay(100);
@@ -498,7 +501,7 @@
 				});
 
 
-				console.log('构建的SCH源码:\n', candidateSource);
+				// console.log('构建的SCH源码:\n', candidateSource);
 				await delay(100);
 
 				// 5. 完成
@@ -1076,7 +1079,7 @@
 			// 当前绘制位置
 			let currentY = startY;
 
-			// 生成导线的辅助函数（修正版）
+			// 生成导线的辅助函数
 			function generateWires(comp, compId, compX, compY, version, wireLength, partIdx = 0, yvalue = false) {
 				const wireLines = [];
 				const symbolParts = symbolPinsDatabase[comp.symbolUuid] || [];
@@ -1090,8 +1093,15 @@
 
 					// 计算引脚绝对坐标（原始，未翻转）
 					const pinX = compX + pinInfo.x;
-					const rawPinY = compY + pinInfo.y; // 原始 Y 坐标（向上为正）
-
+					let rawPinY;
+					let y;
+					if (version.startsWith('2.2.')) {
+						rawPinY = compY + pinInfo.y; // V2版本 Y 坐标（向上为正）
+						y = 1;
+					} else if (version.startsWith('3.')) {
+						rawPinY = compY - pinInfo.y; // V3版本 Y 坐标（向下为正）
+						y = -1;
+					}
 					// 根据引脚角度计算导线终点（基于原始坐标）
 					let endX = pinX;
 					let rawEndY = rawPinY;
@@ -1104,7 +1114,7 @@
 							break;
 						case 90:  // 朝上
 							endX = pinX;
-							rawEndY = rawPinY - wireLength;
+							rawEndY = rawPinY - wireLength * y;
 							netT = 90;
 							break;
 						case 180: // 朝右
@@ -1114,7 +1124,7 @@
 							break;
 						case 270: // 朝下
 							endX = pinX;
-							rawEndY = rawPinY + wireLength;
+							rawEndY = rawPinY + wireLength * y;
 							netT = 90;
 							break;
 						default:
@@ -1182,8 +1192,9 @@
 								const symbolName = comp.symbolName || 'Unknown';
 								const compName = symbolPinsDatabase[comp.symbolUuid][partIdx].name;;
 								// 使用PCB上的坐标、层、旋转
-								comp.y = comp.y + 10;
-								const outY = yvalue ? -comp.y : comp.y;
+								// comp.y = comp.y + 10;
+								const adjustedY = comp.y + 10 * partIdx;
+								const outY = yvalue ? -adjustedY : adjustedY;
 								lines.push(`["COMPONENT","${compId}","${compName}",${comp.x},${outY},0,0,{},0]`);
 								// lines.push(`["COMPONENT","${compId}","${compName}",${comp.x},${comp.y},0,0,{},0]`);
 
@@ -1313,10 +1324,10 @@
 					// 显示标题与框线
 					let padding = 120;
 					if (genFrame && minX !== Infinity && yvalue) {
-						lines.push(`["RECT","e${idCounter++}",${minX - padding},${-minY + padding},${maxX + padding},${-maxY - padding},0,0,0,"st3",0]`);
+						// lines.push(`["RECT","e${idCounter++}",${minX - padding},${-minY + padding},${maxX + padding},${-maxY - padding},0,0,0,"st3",0]`);
 						lines.push(`["TEXT","e${idCounter++}",${minX - padding +10},${-maxY - padding + 30},0,"${group.name}","st2",0]`);
 					}else if(genFrame && minX !== Infinity){
-						lines.push(`["RECT","e${idCounter++}",${minX - padding},${minY - padding},${maxX + padding},${maxY + padding},0,0,0,"st3",0]`);
+						// lines.push(`["RECT","e${idCounter++}",${minX - padding},${minY - padding},${maxX + padding},${maxY + padding},0,0,0,"st3",0]`);
 						lines.push(`["TEXT","e${idCounter++}",${minX - padding +10},${maxY + padding - 30},0,"${group.name}","st2",0]`);
 					}
 
@@ -1478,16 +1489,16 @@
 					// 显示标题与框线
 					const padding = 120;
 					if (genFrame && minX !== Infinity && yvalue) {
-						const rectTicket = idCounter++;
-						const rectId = 'e' + rectTicket;
-						lines.push(`{"type":"RECT","ticket":${rectTicket},"id":"${rectId}"}||{"dotX1":${minX-padding},"dotY1":${-minY+padding},"dotX2":${maxX+padding},"dotY2":${-maxY-padding},"strokeWidth":2,"radiusX":0,"radiusY":0,"rotation":0}|`);
+						// const rectTicket = idCounter++;
+						// const rectId = 'e' + rectTicket;
+						// lines.push(`{"type":"RECT","ticket":${rectTicket},"id":"${rectId}"}||{"dotX1":${minX-padding},"dotY1":${-minY+padding},"dotX2":${maxX+padding},"dotY2":${-maxY-padding},"strokeWidth":2,"radiusX":0,"radiusY":0,"rotation":0}|`);
 						const titleTicket = idCounter++;
 						const titleId = 'e' + titleTicket;
 						lines.push(`{"type":"TEXT","ticket":${titleTicket},"id":"${titleId}"}||{"x":${minX-padding+10},"y":${-maxY- padding+30},"value":"${group.name}","fontSize":60,"align":"LEFT_MIDDLE","rotation":0}|`);
 					}else if(genFrame && minX !== Infinity){
-						const rectTicket = idCounter++;
-						const rectId = 'e' + rectTicket;
-						lines.push(`{"type":"RECT","ticket":${rectTicket},"id":"${rectId}"}||{"dotX1":${minX-padding},"dotY1":${minY-padding},"dotX2":${maxX+padding},"dotY2":${maxY+padding},"strokeWidth":2,"radiusX":0,"radiusY":0,"rotation":0}|`);
+						// const rectTicket = idCounter++;
+						// const rectId = 'e' + rectTicket;
+						// lines.push(`{"type":"RECT","ticket":${rectTicket},"id":"${rectId}"}||{"dotX1":${minX-padding},"dotY1":${minY-padding},"dotX2":${maxX+padding},"dotY2":${maxY+padding},"strokeWidth":2,"radiusX":0,"radiusY":0,"rotation":0}|`);
 						const titleTicket = idCounter++;
 						const titleId = 'e' + titleTicket;
 						lines.push(`{"type":"TEXT","ticket":${titleTicket},"id":"${titleId}"}||{"x":${minX-padding+10},"y":${maxY + padding - 30},"value":"${group.name}","fontSize":60,"align":"LEFT_MIDDLE","rotation":0}|`);

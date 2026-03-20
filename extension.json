@@ -1,10 +1,10 @@
 {
 	"name": "eext-pcbtosch-tool",
 	"uuid": "eextpcbtoschtool0000wolf40960000",
-	"displayName": "PCB转原理图",
+	"displayName": "PCB 转 原理图",
 	"description": "让反推原理图像Layout一样简单",
-	"version": "1.0.0",
-	"publisher": "",
+	"version": "1.0.1",
+	"publisher": "wolfblack",
 	"engines": {
 		"eda": "^3.0.0"
 	},
