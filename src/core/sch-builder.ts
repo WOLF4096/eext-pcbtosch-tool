@@ -106,7 +106,9 @@ export function buildSchSource(
 						lines.push(`["ATTR","e${idCounter++}","${compId}","Unique ID","${comp.uniqueId || ''}",0,0,null,null,null,"st1",0]`);
 
 						if (genWire) {
-							lines.push(...generateWires(comp, compId, comp.x, outY, version, wireLength, symbolPinsDatabase, partIdx));
+							const wireIdCounter = { value: idCounter };
+							lines.push(...generateWires(comp, compId, comp.x, outY, version, wireLength, symbolPinsDatabase, partIdx, wireIdCounter));
+							idCounter = wireIdCounter.value;
 						}
 						minX = Math.min(minX, comp.x);
 						maxX = Math.max(maxX, comp.x);
@@ -169,7 +171,9 @@ export function buildSchSource(
 					lines.push(`["ATTR","e${idCounter++}","${compId}","Unique ID","${comp.uniqueId || ''}",0,0,null,null,null,"st1",0]`);
 
 					if (genWire) {
-						lines.push(...generateWires(comp, compId, compX, outY, version, wireLength, symbolPinsDatabase, partIdx));
+						const wireIdCounter = { value: idCounter };
+						lines.push(...generateWires(comp, compId, compX, outY, version, wireLength, symbolPinsDatabase, partIdx, wireIdCounter));
+						idCounter = wireIdCounter.value;
 					}
 
 					minX = Math.min(minX, compX + xmin);
@@ -226,7 +230,9 @@ export function buildSchSource(
 						lines.push(`{"type":"ATTR","ticket":${idCounter++},"id":"e${idCounter - 1}"}||{"parentId":"${compId}","key":"Name","value":"${comp.name || ''}","rotation":0}|`);
 
 						if (genWire) {
-							lines.push(...generateWires(comp, compId, comp.x, outY, version, wireLength, symbolPinsDatabase, partIdx));
+							const wireIdCounter = { value: idCounter };
+							lines.push(...generateWires(comp, compId, comp.x, outY, version, wireLength, symbolPinsDatabase, partIdx, wireIdCounter));
+							idCounter = wireIdCounter.value;
 						}
 
 						minX = Math.min(minX, comp.x);
@@ -291,7 +297,9 @@ export function buildSchSource(
 					lines.push(`{"type":"ATTR","ticket":${idCounter++},"id":"e${idCounter - 1}"}||{"parentId":"${compId}","key":"Name","value":"${comp.name || ''}","rotation":0}|`);
 
 					if (genWire) {
-						lines.push(...generateWires(comp, compId, compX, outY, version, wireLength, symbolPinsDatabase, partIdx));
+						const wireIdCounter = { value: idCounter };
+						lines.push(...generateWires(comp, compId, compX, outY, version, wireLength, symbolPinsDatabase, partIdx, wireIdCounter));
+						idCounter = wireIdCounter.value;
 					}
 
 					minX = Math.min(minX, compX + xmin);
@@ -330,13 +338,12 @@ function generateWires(
 	wireLength: number,
 	symbolPinsDatabase: Record<string, SymbolPart[]>,
 	partIdx = 0,
+	globalIdCounter: { value: number } = { value: 1000 },
 ): string[] {
 	const wireLines: string[] = [];
 	const symbolParts = symbolPinsDatabase[comp.symbolUuid] || [];
 	const symbolPart = symbolParts[partIdx] || symbolParts[0] || { pins: {} };
 	const symbolPins = symbolPart.pins || {};
-
-	let idCounter = 1000; // Local counter for wires, though in a real refactor we'd pass a global one
 
 	Object.entries(comp.pins || {}).forEach(([pinNumber, netName]) => {
 		if (!netName)
@@ -396,19 +403,19 @@ function generateWires(
 		const outCenterY = (rawPinY + rawEndY) / 2;
 
 		if (version.startsWith('2.2.')) {
-			const wireId = `ew${idCounter++}`;
+			const wireId = `e${globalIdCounter.value++}`;
 			wireLines.push(`["WIRE","${wireId}",[[${pinX},${rawPinY},${endX},${rawEndY}]],"st1",0]`);
-			wireLines.push(`["ATTR","ea${idCounter++}","${wireId}","NET","${netName}",0,1,${centerX},${outCenterY},${netT},"st1",0]`);
+			wireLines.push(`["ATTR","e${globalIdCounter.value++}","${wireId}","NET","${netName}",0,1,${centerX},${outCenterY},${netT},"st1",0]`);
 		}
 		else if (version.startsWith('3.')) {
-			const wireTicket = idCounter++;
-			const lineTicket = idCounter++;
-			const attrTicket = idCounter++;
-			const wireId = `ew${wireTicket}`;
+			const wireTicket = globalIdCounter.value++;
+			const lineTicket = globalIdCounter.value++;
+			const attrTicket = globalIdCounter.value++;
+			const wireId = `e${wireTicket}`;
 
 			wireLines.push(`{"type":"WIRE","ticket":${wireTicket},"id":"${wireId}"}||{"zIndex":1}|`);
-			wireLines.push(`{"type":"LINE","ticket":${lineTicket},"id":"el${lineTicket}"}||{"lineGroup":"${wireId}","startX":${pinX},"startY":${rawPinY},"endX":${endX},"endY":${rawEndY}}|`);
-			wireLines.push(`{"type":"ATTR","ticket":${attrTicket},"id":"ea${attrTicket}"}||{"parentId":"${wireId}","key":"NET","value":"${netName}","x":${centerX},"y":${outCenterY},"rotation":${netT},"keyVisible":false,"valueVisible":true}|`);
+			wireLines.push(`{"type":"LINE","ticket":${lineTicket},"id":"e${lineTicket}"}||{"lineGroup":"${wireId}","startX":${pinX},"startY":${rawPinY},"endX":${endX},"endY":${rawEndY}}|`);
+			wireLines.push(`{"type":"ATTR","ticket":${attrTicket},"id":"e${attrTicket}"}||{"parentId":"${wireId}","key":"NET","value":"${netName}","x":${centerX},"y":${outCenterY},"rotation":${netT},"keyVisible":false,"valueVisible":true}|`);
 		}
 	});
 	return wireLines;

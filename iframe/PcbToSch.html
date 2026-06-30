@@ -391,6 +391,7 @@
 		writeBtn.addEventListener('click', async () => {
 			try {
 				updateProgress(90, '写入文档中...');
+				console.log(candidateSource);
 				const success = await eda.sys_FileManager.setDocumentSource(candidateSource);
 				if (success) {
 					updateProgress(100, '写入成功');
