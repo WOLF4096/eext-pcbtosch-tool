@@ -3,7 +3,7 @@
 	"uuid": "eextpcbtoschtool0000wolf40960000",
 	"displayName": "PCB 转 原理图",
 	"description": "让反推原理图像Layout一样简单",
-	"version": "1.1.3",
+	"version": "1.2.0",
 	"publisher": "wolfblack",
 	"engines": {
 		"eda": "^3.0.0"
@@ -33,7 +33,8 @@
 						"id": "PcbToSch",
 						"title": "从PCB转原理图",
 						"registerFn": "PcbToSch"
-					},{
+					},
+					{
 						"id": "AutoWirePlacerPCB",
 						"title": "从PCB创建导线",
 						"registerFn": "AutoWirePlacerPCB"
