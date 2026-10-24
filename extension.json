@@ -64,6 +64,11 @@
 								"registerFn": "ClearNetlistCache"
 							}
 						]
+					},
+					{
+						"id": "About",
+						"title": "关于",
+						"registerFn": "About"
 					}
 				]
 			}

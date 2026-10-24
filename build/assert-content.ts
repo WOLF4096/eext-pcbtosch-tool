@@ -29,8 +29,8 @@ const CORE_REQUIRED = [
 	'iframe/css/common.css',
 ];
 
-/** 由 JS 运行时拼路径引用，静态扫描不到，只能显式点名 */
-const REQUIRED_IMAGES = ['images/logo.png', 'images/reward_qrcode.png', 'images/wx.png'];
+/** 由 JS 运行时拼路径引用、或由 README 引用的图，静态扫描不全，只能显式点名 */
+const REQUIRED_IMAGES = ['images/logo.png', 'images/img.png', 'images/reward_qrcode.png', 'images/wx.png'];
 
 /** 允许进入 .eext 的类别；一条都命不中的一律算「无关内容」 */
 const ALLOW_RULES: Array<{ name: string; test: (rel: string) => boolean }> = [

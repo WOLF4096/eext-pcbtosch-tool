@@ -56,6 +56,11 @@ export function PcbToSch(): void {
 	openPage('PcbToSch', 640, 540, 'tosch');
 }
 
+/** 关于（版本号、功能清单、致谢与免责） */
+export function About(): void {
+	openPage('About', 860, 720);
+}
+
 /* ===== 四、无界面的功能（按需加载） ===== */
 
 /**

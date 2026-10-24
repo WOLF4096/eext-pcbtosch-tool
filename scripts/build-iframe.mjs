@@ -34,6 +34,7 @@ const OUT_DIR = path.join(ROOT, 'iframe', 'js', 'app');
  */
 const PAGES = {
 	PcbToSch: 'app/pcb-to-sch/index.js',
+	About: 'app/about/index.js',
 };
 
 /** 产物首行横幅：开发者署名 + 提醒这是生成物 */

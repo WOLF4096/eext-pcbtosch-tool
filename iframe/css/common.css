@@ -1,15 +1,18 @@
 /**
  * 狼黑工具 · PCB 转 原理图（独立版）页面样式
  *
- * 本文件只服务 `iframe/PcbToSch.html` 这一个页面：每条规则都对应页面上真实存在的
- * 元素或 JS 运行时会加的类名，没有为「将来可能用到」预留的段落。
+ * 本文件服务 `iframe/PcbToSch.html` 与 `iframe/About.html` 两个页面：每条规则都对应
+ * 页面上真实存在的元素或 JS 运行时会加的类名，没有为「将来可能用到」预留的段落。
  *
  * 已核对过的引用来源：
- *   - HTML：`.app` `.p2s-*` `.btn-secondary` `.status-bar` `.status-text` `.progress-bg`；
+ *   - HTML（PcbToSch）：`.app` `.p2s-*` `.btn-secondary` `.status-bar` `.status-text` `.progress-bg`；
  *   - JS（pcb-to-sch/index.js）：`.grid-row` `.row-cell` `.manual-input` `.row-error`；
  *   - JS（ui/statusBar.js）：在 `.status-text` / `.progress-bg` 上追加
  *     `accent` `success` `warning` `error` `info` 五个后缀类（这些后缀本身不需要规则，
  *     只用于将来扩展，写在这里是为了说明为什么找不到它们）；
+ *   - HTML（About）+ JS（app/about/index.js）：第八节整段从主仓同名小节摘来，
+ *     `.about-*` `.link-*` `#featureTable` `.tag-scope` `.main-row` `.details-row`
+ *     `.howto-*` 以及 `.modal` 弹窗，全部是该页真实用到的；
  *   - 「感觉不错？」浮层的样式由 `js/src/ui/rewardDialog.js` 自带，不在本文件内。
  *
  * 约定：
@@ -24,7 +27,8 @@
  *   一、设计变量          五、按钮与表单控件
  *   二、重置与基础        六、状态栏 / 进度
  *   三、滚动条            七、页面：PcbToSch（640 × 540）
- *   四、页面骨架          八、工具类
+ *   四、页面骨架          八、页面：About（860 × 720）
+ *                         九、工具类
  *
  * 开发者：WOLF4096
  * 辅助开发：DeepSeek-V4.1-Flash
@@ -467,8 +471,413 @@ input[type='radio'] {
 	margin-left: auto;
 }
 
+
 /* ==================================================================
- * 八、工具类（放文件最末，保证能覆盖前面的组件 display）
+ * 八、页面：About（860 × 720）—— 文档型页面
+ * ================================================================== */
+
+/* 文档型页面需要整页滚动 */
+body.page-scroll {
+	overflow-y: auto;
+}
+
+/* 功能表里的标签（适用范围 / 版本）*/
+.tag {
+	font-family: var(--vscode-font-mono);
+}
+
+.tag-row,
+.env-stack {
+	display: flex;
+	gap: 4px;
+}
+
+.env-stack {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+
+/** 弹窗（关于页的二维码预览）*/
+/** 弹窗（About 的二维码预览） */
+.modal {
+	position: fixed;
+	inset: 0;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0.7);
+	z-index: 9999;
+}
+
+.modal-card {
+	max-width: 90vw;
+	max-height: 90vh;
+	padding: 12px;
+	background-color: var(--vscode-panel);
+	border: 1px solid var(--vscode-border);
+	border-radius: var(--vscode-radius-lg);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal-card img {
+	display: block;
+	max-width: 100%;
+	max-height: 80vh;
+	object-fit: contain;
+	border-radius: var(--vscode-radius);
+}
+
+.about-container {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 18px 20px;
+	background-color: var(--vscode-panel);
+	border: 1px solid var(--vscode-border);
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.about-header {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding-bottom: 12px;
+	margin-bottom: 18px;
+	border-bottom: 2px solid var(--vscode-accent);
+}
+
+.about-header .logo {
+	height: 44px;
+	border-radius: var(--vscode-radius-lg);
+}
+
+.about-header h1 {
+	color: var(--vscode-text-bright);
+	font-size: 1.5em;
+}
+
+.about-sub {
+	margin-top: 2px;
+	color: var(--vscode-text-muted);
+	font-size: 0.92em;
+}
+
+.about-sub #appVersion {
+	color: var(--vscode-syntax-number);
+	font-family: var(--vscode-font-mono);
+}
+
+.about-container h2,
+.about-container h3 {
+	padding-bottom: 8px;
+	margin: 1.4em 0 0.7em;
+	border-bottom: 1px solid var(--vscode-border);
+	color: var(--vscode-text-bright);
+	font-size: 1.15em;
+}
+
+.about-container p {
+	margin-bottom: 0.9em;
+}
+
+.about-container .links-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 16px 0;
+}
+
+.link-card {
+	display: inline-flex;
+	align-items: center;
+	padding: 7px 14px;
+	background-color: var(--vscode-border);
+	border: 1px solid var(--vscode-border);
+	border-radius: var(--vscode-radius-lg);
+	color: var(--vscode-text);
+	font-size: 0.92em;
+	transition: all 0.2s ease;
+}
+
+.link-card:hover {
+	border-color: var(--vscode-accent);
+	color: var(--vscode-text-bright);
+	text-decoration: none;
+}
+
+.link-icon {
+	margin-right: 6px;
+	font-weight: 700;
+}
+
+.icon-github::before {
+	content: '</>';
+}
+
+.icon-doc::before {
+	content: '≡';
+}
+
+.icon-link::before {
+	content: '↗';
+}
+
+.notice-box,
+.danger-box {
+	padding: 12px 14px;
+	margin: 16px 0;
+	border-left: 4px solid var(--vscode-warning);
+	background-color: rgba(204, 167, 0, 0.1);
+	color: var(--vscode-text);
+	font-size: 0.95em;
+}
+
+.danger-box {
+	border-left-color: var(--vscode-error);
+	background-color: rgba(241, 76, 76, 0.1);
+}
+
+.danger-box h2 {
+	margin-top: 0;
+	color: var(--vscode-error);
+	border-bottom: none;
+}
+
+.about-container table {
+	width: 100%;
+	margin-top: 14px;
+	border-collapse: collapse;
+	font-size: 0.92em;
+}
+
+.about-container th,
+.about-container td {
+	padding: 7px 6px;
+	border-bottom: 1px solid var(--vscode-border);
+	text-align: left;
+	vertical-align: top;
+}
+
+.about-container th {
+	background-color: var(--vscode-panel-2);
+	color: var(--vscode-text-bright);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.about-container th.col-scope,
+.about-container td.col-scope {
+	text-align: center;
+}
+
+/* 列宽固定，简述列吃掉剩余空间 */
+.about-container .col-name {
+	width: 150px;
+}
+
+.about-container .col-scope {
+	width: 86px;
+}
+
+.about-container .col-demo {
+	width: 80px;
+}
+
+.about-container td.brief-col {
+	color: var(--vscode-text-muted);
+	font-size: 0.92em;
+}
+
+.about-container td.details-cell {
+	padding: 0;
+	border: none;
+}
+
+/** 功能表可展开行 */
+.main-row {
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.main-row:hover {
+	background-color: var(--vscode-list-hover);
+}
+
+.main-row.active {
+	background-color: var(--vscode-active);
+}
+
+.main-row .name-col {
+	position: relative;
+	padding-left: 24px;
+	color: #4fc1ff;
+	font-weight: 600;
+}
+
+.main-row .name-col::before {
+	content: '▶';
+	position: absolute;
+	left: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--vscode-text-muted);
+	font-size: 9px;
+	transition: transform 0.2s;
+}
+
+.main-row.active .name-col::before {
+	transform: translateY(-50%) rotate(90deg);
+}
+
+.details-row {
+	display: none;
+}
+
+.details-row.show {
+	display: table-row;
+}
+
+.details-content {
+	padding: 10px 12px;
+	margin: 0 8px 8px;
+	background-color: var(--vscode-bg);
+	border: 1px solid var(--vscode-border);
+	border-left: 3px solid var(--vscode-accent);
+	border-radius: 0 var(--vscode-radius-lg) var(--vscode-radius-lg) 0;
+}
+
+.details-content h4 {
+	margin-bottom: 6px;
+	color: var(--vscode-text-bright);
+	font-size: 1em;
+}
+
+.details-content p {
+	margin-bottom: 8px;
+	color: var(--vscode-text-muted);
+	font-size: 0.92em;
+}
+
+.details-content p:last-child {
+	margin-bottom: 0;
+}
+
+/** 「使用方法」步骤列表 */
+.howto-list {
+	margin: 0 0 8px 18px;
+	color: var(--vscode-text-muted);
+	font-size: 0.92em;
+	line-height: 1.75;
+}
+
+.howto-list li {
+	padding-left: 2px;
+}
+
+.howto-list li::marker {
+	color: var(--vscode-accent);
+}
+
+/** 「注意」段落 */
+.details-content .note-heading {
+	margin-top: 10px;
+	margin-bottom: 4px;
+}
+
+.details-content .howto-note {
+	padding: 6px 10px;
+	color: var(--vscode-text-muted);
+	font-size: 0.9em;
+	background: rgba(206, 145, 120, 0.08);
+	border-left: 2px solid var(--vscode-syntax-string);
+	border-radius: 0 var(--vscode-radius) var(--vscode-radius) 0;
+}
+
+.usage-tag {
+	display: inline-block;
+	padding: 1px 6px;
+	margin-right: 4px;
+	border: 1px solid rgba(0, 122, 204, 0.4);
+	border-radius: var(--vscode-radius-lg);
+	background: rgba(0, 122, 204, 0.2);
+	color: #4fc1ff;
+	font-size: 0.85em;
+	font-weight: 500;
+}
+
+.note-tag {
+	display: inline-block;
+	padding: 1px 6px;
+	margin-right: 4px;
+	border: 1px solid rgba(206, 145, 120, 0.45);
+	border-radius: var(--vscode-radius-lg);
+	background: rgba(206, 145, 120, 0.18);
+	color: var(--vscode-syntax-string);
+	font-size: 0.85em;
+	font-weight: 500;
+}
+
+.tag-scope.pcb {
+	border-color: rgba(86, 156, 214, 0.3);
+	background: rgba(86, 156, 214, 0.1);
+	color: var(--vscode-syntax-keyword);
+}
+
+.tag-scope.sch {
+	border-color: rgba(206, 145, 120, 0.3);
+	background: rgba(206, 145, 120, 0.1);
+	color: var(--vscode-syntax-string);
+}
+
+.tag-scope.global {
+	border-color: rgba(78, 201, 176, 0.3);
+	background: rgba(78, 201, 176, 0.1);
+	color: var(--vscode-syntax-type);
+}
+
+.tag-scope.warning {
+	border-color: rgba(241, 76, 76, 0.3);
+	background: rgba(241, 76, 76, 0.1);
+	color: var(--vscode-error);
+}
+
+.ver-text {
+	color: var(--vscode-syntax-number);
+	font-family: var(--vscode-font-mono);
+	font-size: 11px;
+}
+
+.about-modal .close-btn {
+	position: absolute;
+	top: -12px;
+	right: -12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	background-color: var(--vscode-danger);
+	border: 2px solid var(--vscode-panel);
+	border-radius: 50%;
+	color: var(--vscode-text-bright);
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.about-modal {
+	position: relative;
+}
+
+/* 表格里的次要文字 */
+.muted {
+	color: var(--vscode-text-muted);
+}
+
+/* ==================================================================
+ * 九、工具类（放文件最末，保证能覆盖前面的组件 display）
  * ================================================================== */
 
 /** 通用隐藏类：本页当前没有元素用它，留着是为了让后续加 `class="hidden"` 时仍然生效 */
