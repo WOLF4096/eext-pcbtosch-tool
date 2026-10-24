@@ -30,14 +30,20 @@ const CORE_REQUIRED = [
 ];
 
 /** 由 JS 运行时拼路径引用、或由 README 引用的图，静态扫描不全，只能显式点名 */
-const REQUIRED_IMAGES = ['images/logo.png', 'images/img.png', 'images/reward_qrcode.png', 'images/wx.png'];
+const REQUIRED_IMAGES = [
+	'images/logo.png',
+	'images/img.png',
+	'images/az.jpg',
+	'images/reward_qrcode.png',
+	'images/wx.png',
+];
 
 /** 允许进入 .eext 的类别；一条都命不中的一律算「无关内容」 */
 const ALLOW_RULES: Array<{ name: string; test: (rel: string) => boolean }> = [
 	{ name: '扩展清单', test: rel => rel === 'extension.json' },
 	{ name: '广场展示资源', test: rel => /^(?:LICENSE|README\.md|CHANGELOG\.md|PRIVACY\.md)$/.test(rel) },
 	{ name: '扩展入口', test: rel => rel === 'dist/index.js' },
-	{ name: '详情图片', test: rel => /^images\/[^/]+\.png$/.test(rel) },
+	{ name: '详情图片', test: rel => /^images\/[^/]+\.(?:png|jpe?g|webp|gif)$/i.test(rel) },
 	{ name: '多语言', test: rel => /^locales\/.+\.json$/.test(rel) },
 	{ name: '页面', test: rel => /^iframe\/[^/]+\.html$/.test(rel) },
 	{ name: '页面样式', test: rel => rel === 'iframe/css/common.css' },
@@ -46,7 +52,7 @@ const ALLOW_RULES: Array<{ name: string; test: (rel: string) => boolean }> = [
 ];
 
 /** 只有这些后缀才需要校验文件是否存在 */
-const ASSET_EXT = /\.(?:js|css|png|json)$/i;
+const ASSET_EXT = /\.(?:js|css|png|jpe?g|webp|gif|json)$/i;
 
 /**
  * 路径统一成正斜杠（zip 内一律用 `/`）
