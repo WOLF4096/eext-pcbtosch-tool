@@ -23,3 +23,4 @@ debug.log
 /.workbuddy/
 /images/img.png
 /temp/
+npm run build.cmd
