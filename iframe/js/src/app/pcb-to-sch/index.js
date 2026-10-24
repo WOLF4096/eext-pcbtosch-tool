@@ -2,7 +2,7 @@
  * @//module/ app/pcb-to-sch/index
  * @//description/ 页面入口：解包工程 → 解析 PCB → 查符号 → 构建原理图源码 → 预览表格 → 写入/导出（无导出）
  * @//exports/ 无
- * @//dependencies/ core/version, core/log, core/util, ui/statusBar, ui/progressTicker, ui/download, ui/toast, app/pcb-to-sch/model, app/pcb-to-sch/symbolParser, app/pcb-to-sch/sourceBuilder
+ * @//dependencies/ core/version, core/log, core/util, ui/statusBar, ui/progressTicker, ui/download, ui/toast, ui/rewardPrompt, app/pcb-to-sch/model, app/pcb-to-sch/symbolParser, app/pcb-to-sch/sourceBuilder
  * @//example/ 由 iframe/PcbToSch.html 加载（依赖同页的 jszip.min.js 提供全局 JSZip）
  *
  * 写入门禁（2026-10 实测）：`documentType !== 1`（非原理图页）时写入会被系统拦成「格式错误」，
@@ -13,25 +13,17 @@
  * 辅助开发：DeepSeek-V4.1-Flash
  * 本工具为非官方第三方开源扩展，与嘉立创 / EasyEDA 官方无隶属关系
  */
-
-import { getEditorVersion, isV2 } from '../../core/version.js';
 import { logger } from '../../core/log.js';
 import { escapeHtml } from '../../core/util.js';
-import { createStatusBar } from '../../ui/statusBar.js';
-import { createProgressTicker } from '../../ui/progressTicker.js';
+import { classifyVersionSupport, getEditorVersion, isV2 } from '../../core/version.js';
 import { downloadText } from '../../ui/download.js';
+import { createProgressTicker } from '../../ui/progressTicker.js';
+import { recordUsage } from '../../ui/rewardPrompt.js';
+import { createStatusBar } from '../../ui/statusBar.js';
 import { toast } from '../../ui/toast.js';
-import {
-	enrichWithSymbol,
-	findUuids,
-	mergeComponentsForDisplay,
-	parsePcbContent,
-	pcbFilePath,
-	projectTitleOf,
-	symbolFilePath,
-} from './model.js';
-import { parseSymbolSource } from './symbolParser.js';
+import { enrichWithSymbol, findUuids, mergeComponentsForDisplay, parsePcbContent, pcbFilePath, projectTitleOf, symbolFilePath } from './model.js';
 import { buildSchSource } from './sourceBuilder.js';
+import { parseSymbolSource } from './symbolParser.js';
 
 // ---------- 状态 ----------
 let zip = null;
@@ -85,13 +77,26 @@ function delay(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * 版本提示的三档文案与配色
+ *
+ * 适配区间是 2.2.45 ~ 4.*.*（下限改用具体版本号：2.2.45 之前缺本工具依赖的 API）。
+ */
+const VERSION_HINTS = {
+	supported: { text: '功能可用', color: '#8f8' },
+	tooOld: { text: '建议更新EDA', color: '#fb8' },
+	tooNew: { text: '暂未做适配', color: '#fb8' },
+};
+
 /** 版本检测：不在 EDA 环境时禁用全部按钮 */
 function initVersion() {
 	try {
 		version = getEditorVersion();
 		if (!version) throw new Error('未检测到 EDA 环境');
-		versionSpan.textContent = `当前EDA版本：${version} 功能可用`;
-		versionSpan.style.color = '#8f8';
+		const hint = VERSION_HINTS[classifyVersionSupport(version)];
+		// 版本号解析不出来时只显示版本号，不硬贴一个「可用」
+		versionSpan.textContent = hint ? `当前EDA版本：${version} ${hint.text}` : `当前EDA版本：${version}`;
+		versionSpan.style.color = hint ? hint.color : '#ccc';
 		// V2 的电气坐标向上为正，V3/V4 向下为正 → 默认翻转值不同
 		yvalueCheck.checked = !isV2();
 	} catch (e) {
@@ -349,7 +354,7 @@ async function onBuild() {
 				if (rowElement) rowElement.classList.add('row-error');
 			});
 			if (!ignoreMissing) {
-				throw new Error('未生成源码，部分元件格式错误，已标红，需要做完 器件标准化 才能转换！！！');
+				throw new Error('部分元件没有符号！！！解决方法：可忽略错误 或者 在EDA器件标准化面板替换器件');
 			}
 			logger.debug(`忽略 ${missingSymbols.length} 组缺失符号的元件，它们将不会出现在生成的源码中`);
 			updateProgress(10, `忽略 ${missingSymbols.length} 组缺失符号元件`);
@@ -357,9 +362,7 @@ async function onBuild() {
 		await delay(100);
 
 		// 勾了「忽略符号错误」时，没有符号的器件直接不写进源码
-		const componentsToBuild = ignoreMissing
-			? components.filter((comp) => comp.symbolUuid && comp.symbolUuid.trim() !== '')
-			: components;
+		const componentsToBuild = ignoreMissing ? components.filter((comp) => comp.symbolUuid && comp.symbolUuid.trim() !== '') : components;
 
 		updateProgress(20, '检测多部件符号中');
 		await enrichPartCounts(componentsToBuild);
@@ -432,6 +435,9 @@ async function onWrite() {
 		if (isSuccess && placedCount > 0) {
 			updateProgress(100, `写入成功！耗时${elapsed}秒，器件 ${placedCount} 个`);
 			toast('写入成功', 'success');
+
+			// 写入文档成功 → 记一次使用（内部吞掉异常，不影响写入结果）
+			await recordUsage();
 		} else if (isSuccess) {
 			updateProgress(100, `源码已写入，但没有生成任何器件（耗时${elapsed}秒）`);
 			toast('源码已写入，但器件没有生成：原理图页可能有旧内容，建议新建一个空白原理图页后重新写入', 'error');
@@ -453,9 +459,7 @@ function onExportCsv() {
 		return;
 	}
 
-	const headers = Array.from(document.querySelectorAll('.table-header .header-cell')).map((cell) =>
-		cell.innerText.trim()
-	);
+	const headers = Array.from(document.querySelectorAll('.table-header .header-cell')).map((cell) => cell.innerText.trim());
 	const rows = [];
 	document.querySelectorAll('.grid-row').forEach((row) => {
 		const cells = row.querySelectorAll('.row-cell');
@@ -572,6 +576,9 @@ async function onExportProject() {
 
 		updateProgress(100, `导出成功：${fileName}`);
 		toast('文件已导出', 'success');
+
+		// 导出文件成功 → 记一次使用（内部吞掉异常，不影响导出结果）
+		await recordUsage();
 	} catch (error) {
 		logger.error('导出失败:', error);
 		updateProgress(0, `导出错误: ${error.message}`);

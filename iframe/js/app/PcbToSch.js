@@ -7,50 +7,6 @@
  */
 "use strict";
 (() => {
-  // iframe/js/src/core/eda.js
-  function getEda() {
-    try {
-      if (typeof eda !== "undefined" && eda) return eda;
-    } catch (e) {
-    }
-    try {
-      if (globalThis.parent && globalThis.parent !== globalThis && globalThis.parent.eda) return globalThis.parent.eda;
-    } catch (e) {
-    }
-    return globalThis.eda || null;
-  }
-
-  // iframe/js/src/core/version.js
-  var cachedVersion = null;
-  function getEditorVersion() {
-    if (cachedVersion !== null) return cachedVersion;
-    try {
-      const edaObj = getEda();
-      if (!edaObj || !edaObj.sys_Environment || typeof edaObj.sys_Environment.getEditorCurrentVersion !== "function") {
-        return "";
-      }
-      const version2 = edaObj.sys_Environment.getEditorCurrentVersion();
-      const text = version2 === null || version2 === void 0 ? "" : String(version2).trim();
-      if (text) cachedVersion = text;
-      return text;
-    } catch (e) {
-      return "";
-    }
-  }
-  function getVersionFamily() {
-    const version2 = getEditorVersion();
-    if (!version2) return "";
-    if (version2.startsWith("4")) return "V4";
-    if (version2.startsWith("3")) return "V3";
-    if (version2.startsWith("2.2")) return "V2.2";
-    if (version2.startsWith("2")) return "V2";
-    return "";
-  }
-  function isV2() {
-    const family = getVersionFamily();
-    return family === "V2" || family === "V2.2";
-  }
-
   // iframe/js/src/core/log.js
   var LOG_LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
   var currentLogLevel = LOG_LEVELS.info;
@@ -118,6 +74,340 @@
     return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+  // iframe/js/src/core/eda.js
+  function getEda() {
+    try {
+      if (typeof eda !== "undefined" && eda) return eda;
+    } catch (e) {
+    }
+    try {
+      if (globalThis.parent && globalThis.parent !== globalThis && globalThis.parent.eda) return globalThis.parent.eda;
+    } catch (e) {
+    }
+    return globalThis.eda || null;
+  }
+
+  // iframe/js/src/core/version.js
+  var cachedVersion = null;
+  function getEditorVersion() {
+    if (cachedVersion !== null) return cachedVersion;
+    try {
+      const edaObj = getEda();
+      if (!edaObj || !edaObj.sys_Environment || typeof edaObj.sys_Environment.getEditorCurrentVersion !== "function") {
+        return "";
+      }
+      const version2 = edaObj.sys_Environment.getEditorCurrentVersion();
+      const text = version2 === null || version2 === void 0 ? "" : String(version2).trim();
+      if (text) cachedVersion = text;
+      return text;
+    } catch (e) {
+      return "";
+    }
+  }
+  function getVersionFamily() {
+    const version2 = getEditorVersion();
+    if (!version2) return "";
+    if (version2.startsWith("4")) return "V4";
+    if (version2.startsWith("3")) return "V3";
+    if (version2.startsWith("2.2")) return "V2.2";
+    if (version2.startsWith("2")) return "V2";
+    return "";
+  }
+  function isV2() {
+    const family = getVersionFamily();
+    return family === "V2" || family === "V2.2";
+  }
+  var MIN_SUPPORTED_VERSION = "2.2.45";
+  var MAX_SUPPORTED_MAJOR = 4;
+  function parseVersionParts(version2) {
+    const text = String(version2 === null || version2 === void 0 ? "" : version2).trim();
+    if (!text) return null;
+    const parts = text.split(".").map((segment) => Number.parseInt(segment, 10));
+    if (parts.some((value) => !Number.isFinite(value))) return null;
+    return parts;
+  }
+  function compareVersionParts(left, right) {
+    const length = Math.max(left.length, right.length);
+    for (let i = 0; i < length; i++) {
+      const a = left[i] || 0;
+      const b = right[i] || 0;
+      if (a !== b) return a > b ? 1 : -1;
+    }
+    return 0;
+  }
+  function classifyVersionSupport(version2) {
+    const parts = parseVersionParts(version2);
+    if (!parts) return "";
+    const minParts = parseVersionParts(MIN_SUPPORTED_VERSION);
+    if (compareVersionParts(parts, minParts) < 0) return "tooOld";
+    if (parts[0] > MAX_SUPPORTED_MAJOR) return "tooNew";
+    return "supported";
+  }
+
+  // iframe/js/src/ui/download.js
+  function canDownload(doc, urlApi) {
+    return Boolean(doc && typeof doc.createElement === "function" && urlApi && typeof urlApi.createObjectURL === "function");
+  }
+  function mountAndClick(doc, a) {
+    if (doc.body && typeof doc.body.appendChild === "function") doc.body.appendChild(a);
+    if (typeof a.click === "function") a.click();
+    if (typeof a.remove === "function") a.remove();
+  }
+  function downloadBlob(fileName, blob, options = {}) {
+    const doc = options.doc || globalThis.document;
+    const urlApi = options.urlApi || globalThis.URL;
+    if (!canDownload(doc, urlApi)) return false;
+    const href = urlApi.createObjectURL(blob);
+    const a = doc.createElement("a");
+    a.href = href;
+    a.download = fileName;
+    mountAndClick(doc, a);
+    if (typeof urlApi.revokeObjectURL === "function") urlApi.revokeObjectURL(href);
+    return true;
+  }
+  function downloadText(fileName, text, options = {}) {
+    const mime = options.mime || "text/plain";
+    const body = options.bom ? "\uFEFF" + String(text) : String(text);
+    const blob = new Blob([body], { type: mime + ";charset=utf-8" });
+    return downloadBlob(fileName, blob, options);
+  }
+
+  // iframe/js/src/ui/progressTicker.js
+  function advanceProgress(value, opts) {
+    const to = Number(opts && opts.to);
+    const step = Number(opts && opts.step);
+    const next = Number(value) + (Number.isFinite(step) && step > 0 ? step : 1);
+    if (!Number.isFinite(to)) return next;
+    return Math.min(to, next);
+  }
+  function createProgressTicker(options = {}) {
+    const timers = options.timers || {
+      setInterval: (fn, ms) => globalThis.setInterval(fn, ms),
+      clearInterval: (handle2) => globalThis.clearInterval(handle2)
+    };
+    const to = Number.isFinite(Number(options.to)) ? Number(options.to) : 99;
+    const step = Number.isFinite(Number(options.step)) ? Number(options.step) : 1;
+    const intervalMs = Number.isFinite(Number(options.intervalMs)) ? Number(options.intervalMs) : 1e3;
+    const onTick = typeof options.onTick === "function" ? options.onTick : null;
+    let current = Number.isFinite(Number(options.from)) ? Number(options.from) : 0;
+    let handle = null;
+    function start() {
+      if (handle !== null) return;
+      handle = timers.setInterval(() => {
+        const next = advanceProgress(current, { to, step });
+        if (next === current) return;
+        current = next;
+        if (onTick) onTick(current);
+      }, intervalMs);
+    }
+    function stop() {
+      if (handle === null) return;
+      timers.clearInterval(handle);
+      handle = null;
+    }
+    function value() {
+      return current;
+    }
+    function running() {
+      return handle !== null;
+    }
+    return { start, stop, value, running };
+  }
+
+  // iframe/js/src/ui/rewardDialog.js
+  var OVERLAY_ID = "reward-modal";
+  var STYLE_ID = "reward-style";
+  var ISSUE_URL = "https://github.com/WOLF4096/eext-pcbtosch-tool/issues";
+  var IMAGES = {
+    reward: {
+      src: "/images/reward_qrcode.png",
+      fallback: "../images/reward_qrcode.png",
+      caption: "微信扫码 · 请开发者喝蜜雪"
+    },
+    wechat: {
+      src: "/images/wx.png",
+      fallback: "../images/wx.png",
+      caption: "微信扫码联系开发者"
+    }
+  };
+  var DIALOG_STYLE = `
+.rw-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100000;
+	background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center;
+	backdrop-filter: blur(2px); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.rw-box { width: 440px; max-width: calc(100vw - 40px); max-height: 82vh; background: #252526;
+	border: 1px solid #3e3e42; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+	display: flex; flex-direction: column; overflow: hidden; }
+.rw-head { padding: 14px 18px; border-bottom: 1px solid #3e3e42; font-size: 15px; font-weight: bold;
+	color: #eee; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.rw-close { cursor: pointer; color: #999; font-size: 16px; line-height: 1; padding: 2px 7px; border-radius: 4px; user-select: none; }
+.rw-close:hover { background: #3c3c3c; color: #fff; }
+.rw-body { padding: 16px 18px; overflow-y: auto; font-size: 13px; line-height: 1.7; color: #ccc; background: #1e1e1e; }
+.rw-img-area { display: none; margin-top: 14px; text-align: center; background: #fff; border-radius: 6px; padding: 12px; }
+.rw-img-area img { max-width: 260px; max-height: min(260px, 36vh); width: auto; height: auto; display: block; margin: 0 auto; }
+.rw-cap { margin-top: 8px; font-size: 12px; color: #666; }
+.rw-foot { padding: 12px 18px; border-top: 1px solid #3e3e42; display: flex; gap: 8px; flex-wrap: wrap;
+	align-items: center; justify-content: flex-end; background: #333337; flex-shrink: 0; }
+/* 四个按钮统一成同一尺寸：固定高度 + inline-flex 居中，
+   button 与 a 的默认字体/行高不同，不写死的话「反馈问题」会比旁边高一截 */
+.rw-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+	height: 30px; padding: 0 14px; border: 1px solid #3e3e42; border-radius: 4px; background: #3c3c3c;
+	color: #ddd; font-family: inherit; font-size: 12px; line-height: 1; white-space: nowrap;
+	cursor: pointer; transition: opacity 0.15s; }
+.rw-btn:hover { background: #4e4e52; color: #fff; }
+a.rw-btn { text-decoration: none; }
+.rw-btn-reward { background: #c2492f; border-color: #c2492f; color: #fff; font-weight: 600; }
+.rw-btn-reward:hover { background: #a93b25; border-color: #a93b25; }
+.rw-btn-ghost { background: transparent; }
+`;
+  var DIALOG_HTML = `
+<div class="rw-overlay" id="${OVERLAY_ID}">
+	<div class="rw-box">
+		<div class="rw-head"><span id="rw-title">感觉不错？</span><span class="rw-close" id="rw-btn-x" title="关闭">✕</span></div>
+		<div class="rw-body">
+			<p id="rw-desc" style="margin:0;"></p>
+			<div class="rw-img-area" id="rw-img-area">
+				<img id="rw-img" alt="二维码">
+				<div class="rw-cap" id="rw-cap"></div>
+			</div>
+		</div>
+		<div class="rw-foot">
+			<button class="rw-btn rw-btn-reward" id="rw-btn-reward">请开发者喝蜜雪</button>
+			<button class="rw-btn" id="rw-btn-wechat">联系开发者</button>
+			<a class="rw-btn" id="rw-btn-issue" href="${ISSUE_URL}" target="_blank" rel="noopener noreferrer">反馈问题</a>
+			<button class="rw-btn rw-btn-ghost" id="rw-btn-close">关闭</button>
+		</div>
+	</div>
+</div>
+`;
+  function closeRewardDialog() {
+    if (typeof document === "undefined") return;
+    const overlay = document.getElementById(OVERLAY_ID);
+    if (overlay) overlay.style.display = "none";
+  }
+  function bindImageFallback(img, meta) {
+    img.onerror = () => {
+      if (img.getAttribute("src") === meta.src) {
+        img.setAttribute("src", meta.fallback);
+        return;
+      }
+      img.onerror = null;
+    };
+  }
+  function showRewardImage(kind = "reward") {
+    const overlay = ensureDialog();
+    if (!overlay) return;
+    const meta = IMAGES[kind] || IMAGES.reward;
+    const img = overlay.querySelector("#rw-img");
+    const area = overlay.querySelector("#rw-img-area");
+    const caption = overlay.querySelector("#rw-cap");
+    if (!img || !area) return;
+    bindImageFallback(img, meta);
+    img.setAttribute("src", meta.src);
+    if (caption) caption.textContent = meta.caption;
+    area.style.display = "block";
+  }
+  function hideImageArea() {
+    if (typeof document === "undefined") return;
+    const area = document.getElementById("rw-img-area");
+    if (area) area.style.display = "none";
+  }
+  function ensureDialog() {
+    if (typeof document === "undefined") return null;
+    const existing = document.getElementById(OVERLAY_ID);
+    if (existing) return existing;
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = DIALOG_STYLE;
+    document.head.appendChild(style);
+    const holder = document.createElement("div");
+    holder.innerHTML = DIALOG_HTML.trim();
+    const overlay = holder.firstElementChild;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#rw-btn-close").addEventListener("click", closeRewardDialog);
+    overlay.querySelector("#rw-btn-x").addEventListener("click", closeRewardDialog);
+    overlay.querySelector("#rw-btn-reward").addEventListener("click", () => showRewardImage("reward"));
+    overlay.querySelector("#rw-btn-wechat").addEventListener("click", () => showRewardImage("wechat"));
+    return overlay;
+  }
+  function fillDescription(count) {
+    const desc = document.getElementById("rw-desc");
+    if (!desc) return;
+    desc.textContent = count ? `这是你第 ${count} 次使用「从 PCB 转原理图」。如果它帮你省了时间，可以请开发者喝杯蜜雪，遇到问题也欢迎反馈～` : "本工具免费开源、持续维护。如果它帮你省了时间，欢迎请开发者喝杯蜜雪，或反馈使用中遇到的问题～";
+  }
+  function showRewardDialog(options = {}) {
+    const overlay = ensureDialog();
+    if (!overlay) return;
+    const title = overlay.querySelector("#rw-title");
+    if (title) title.textContent = options.title || "感觉不错？";
+    fillDescription(options.count);
+    hideImageArea();
+    if (options.show) showRewardImage(options.show);
+    overlay.style.display = "flex";
+  }
+
+  // iframe/js/src/ui/rewardPrompt.js
+  var COUNT_KEY = "PCB_TO_SCH_USAGE_COUNT";
+  var PROMPTED_KEY = "PCB_TO_SCH_REWARD_PROMPTED";
+  var PROMPT_STEP = 10;
+  var countCache = null;
+  var promptedCache = null;
+  var queue = Promise.resolve();
+  function toCount(value) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+  async function readValue(key) {
+    try {
+      const host = getEda();
+      if (!host || !host.sys_Storage) return null;
+      const raw = await host.sys_Storage.getExtensionUserConfig(key);
+      return raw === void 0 || raw === null ? null : raw;
+    } catch (e) {
+      return null;
+    }
+  }
+  async function writeValue(key, value) {
+    try {
+      const host = getEda();
+      if (!host || !host.sys_Storage) return false;
+      return await host.sys_Storage.setExtensionUserConfig(key, value) !== false;
+    } catch (e) {
+      return false;
+    }
+  }
+  async function readCount() {
+    if (countCache === null) countCache = toCount(await readValue(COUNT_KEY));
+    return countCache;
+  }
+  async function readPrompted() {
+    if (promptedCache === null) promptedCache = toCount(await readValue(PROMPTED_KEY));
+    return promptedCache;
+  }
+  function shouldPrompt(count, prompted) {
+    return count > 0 && count % PROMPT_STEP === 0 && prompted !== count;
+  }
+  async function recordOnce(showDialog) {
+    try {
+      const count = await readCount() + 1;
+      countCache = count;
+      await writeValue(COUNT_KEY, String(count));
+      logger.info(`累计转换次数：${count}`);
+      if (shouldPrompt(count, await readPrompted())) {
+        promptedCache = count;
+        await writeValue(PROMPTED_KEY, String(count));
+        showDialog({ title: "感觉不错？", count });
+      }
+      return count;
+    } catch (e) {
+      return -1;
+    }
+  }
+  function recordUsage(showDialog = showRewardDialog) {
+    const task = queue.then(() => recordOnce(showDialog));
+    queue = task.catch(() => void 0);
+    return task;
+  }
+
   // iframe/js/src/ui/statusBar.js
   var LEVEL_CLASS = Object.freeze({
     "": "",
@@ -170,76 +460,6 @@
       width(0, "");
     }
     return { text, progress, width, reset };
-  }
-
-  // iframe/js/src/ui/progressTicker.js
-  function advanceProgress(value, opts) {
-    const to = Number(opts && opts.to);
-    const step = Number(opts && opts.step);
-    const next = Number(value) + (Number.isFinite(step) && step > 0 ? step : 1);
-    if (!Number.isFinite(to)) return next;
-    return Math.min(to, next);
-  }
-  function createProgressTicker(options = {}) {
-    const timers = options.timers || {
-      setInterval: (fn, ms) => globalThis.setInterval(fn, ms),
-      clearInterval: (handle2) => globalThis.clearInterval(handle2)
-    };
-    const to = Number.isFinite(Number(options.to)) ? Number(options.to) : 99;
-    const step = Number.isFinite(Number(options.step)) ? Number(options.step) : 1;
-    const intervalMs = Number.isFinite(Number(options.intervalMs)) ? Number(options.intervalMs) : 1e3;
-    const onTick = typeof options.onTick === "function" ? options.onTick : null;
-    let current = Number.isFinite(Number(options.from)) ? Number(options.from) : 0;
-    let handle = null;
-    function start() {
-      if (handle !== null) return;
-      handle = timers.setInterval(() => {
-        const next = advanceProgress(current, { to, step });
-        if (next === current) return;
-        current = next;
-        if (onTick) onTick(current);
-      }, intervalMs);
-    }
-    function stop() {
-      if (handle === null) return;
-      timers.clearInterval(handle);
-      handle = null;
-    }
-    function value() {
-      return current;
-    }
-    function running() {
-      return handle !== null;
-    }
-    return { start, stop, value, running };
-  }
-
-  // iframe/js/src/ui/download.js
-  function canDownload(doc, urlApi) {
-    return Boolean(doc && typeof doc.createElement === "function" && urlApi && typeof urlApi.createObjectURL === "function");
-  }
-  function mountAndClick(doc, a) {
-    if (doc.body && typeof doc.body.appendChild === "function") doc.body.appendChild(a);
-    if (typeof a.click === "function") a.click();
-    if (typeof a.remove === "function") a.remove();
-  }
-  function downloadBlob(fileName, blob, options = {}) {
-    const doc = options.doc || globalThis.document;
-    const urlApi = options.urlApi || globalThis.URL;
-    if (!canDownload(doc, urlApi)) return false;
-    const href = urlApi.createObjectURL(blob);
-    const a = doc.createElement("a");
-    a.href = href;
-    a.download = fileName;
-    mountAndClick(doc, a);
-    if (typeof urlApi.revokeObjectURL === "function") urlApi.revokeObjectURL(href);
-    return true;
-  }
-  function downloadText(fileName, text, options = {}) {
-    const mime = options.mime || "text/plain";
-    const body = options.bom ? "\uFEFF" + String(text) : String(text);
-    const blob = new Blob([body], { type: mime + ";charset=utf-8" });
-    return downloadBlob(fileName, blob, options);
   }
 
   // iframe/js/src/ui/toast.js
@@ -934,12 +1154,18 @@
   function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
+  var VERSION_HINTS = {
+    supported: { text: "功能可用", color: "#8f8" },
+    tooOld: { text: "建议更新EDA", color: "#fb8" },
+    tooNew: { text: "暂未做适配", color: "#fb8" }
+  };
   function initVersion() {
     try {
       version = getEditorVersion();
       if (!version) throw new Error("未检测到 EDA 环境");
-      versionSpan.textContent = `当前EDA版本：${version} 功能可用`;
-      versionSpan.style.color = "#8f8";
+      const hint = VERSION_HINTS[classifyVersionSupport(version)];
+      versionSpan.textContent = hint ? `当前EDA版本：${version} ${hint.text}` : `当前EDA版本：${version}`;
+      versionSpan.style.color = hint ? hint.color : "#ccc";
       yvalueCheck.checked = !isV2();
     } catch (e) {
       versionSpan.textContent = "当前不在EDA环境，当前版本不支持转换";
@@ -1120,7 +1346,7 @@
           if (rowElement) rowElement.classList.add("row-error");
         });
         if (!ignoreMissing) {
-          throw new Error("未生成源码，部分元件格式错误，已标红，需要做完 器件标准化 才能转换！！！");
+          throw new Error("部分元件没有符号！！！解决方法：可忽略错误 或者 在EDA器件标准化面板替换器件");
         }
         logger.debug(`忽略 ${missingSymbols.length} 组缺失符号的元件，它们将不会出现在生成的源码中`);
         updateProgress(10, `忽略 ${missingSymbols.length} 组缺失符号元件`);
@@ -1185,6 +1411,7 @@
       if (isSuccess && placedCount > 0) {
         updateProgress(100, `写入成功！耗时${elapsed}秒，器件 ${placedCount} 个`);
         toast("写入成功", "success");
+        await recordUsage();
       } else if (isSuccess) {
         updateProgress(100, `源码已写入，但没有生成任何器件（耗时${elapsed}秒）`);
         toast("源码已写入，但器件没有生成：原理图页可能有旧内容，建议新建一个空白原理图页后重新写入", "error");
@@ -1203,9 +1430,7 @@
       updateProgress(0, "请先加载数据");
       return;
     }
-    const headers = Array.from(document.querySelectorAll(".table-header .header-cell")).map(
-      (cell) => cell.innerText.trim()
-    );
+    const headers = Array.from(document.querySelectorAll(".table-header .header-cell")).map((cell) => cell.innerText.trim());
     const rows = [];
     document.querySelectorAll(".grid-row").forEach((row) => {
       const cells = row.querySelectorAll(".row-cell");
@@ -1285,6 +1510,7 @@
       URL.revokeObjectURL(link.href);
       updateProgress(100, `导出成功：${fileName}`);
       toast("文件已导出", "success");
+      await recordUsage();
     } catch (error) {
       logger.error("导出失败:", error);
       updateProgress(0, `导出错误: ${error.message}`);
