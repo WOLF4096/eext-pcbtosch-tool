@@ -9,7 +9,8 @@
  * 功能代码的位置：
  *   - 有界面：`iframe/PcbToSch.html` + `iframe/js/src/app/pcb-to-sch/**`（源码用 ESM 写，
  *     `npm run build:iframe` 打包成 `iframe/js/app/PcbToSch.js`，HTML 只引产物）；
- *   - 无界面：`src/js/autoWire/**`，**按需 `import()`** —— 不要在入口静态引入，
+ *   - 无界面：`src/js/autoWire/**`（创建导线：index / netlistParser / docSwitch /
+ *     netlistCache / netlistSync），**按需 `import()`** —— 不要在入口静态引入，
  *     否则每次打开 EDA 都要先把导线功能加载进内存。
  *
  * 开发文档：https://prodocs.lceda.cn/cn/api/guide/
@@ -58,12 +59,41 @@ export function PcbToSch(): void {
 /* ===== 四、无界面的功能（按需加载） ===== */
 
 /**
- * 从 PCB 创建导线
+ * 创建导线 · 来自 PCB
  *
- * 在原理图中选中器件后执行：按 PCB 网表在符号引脚上自动拉导线。
+ * 在原理图中选中器件后执行：临时切到 PCB 取选中器件的网络，切回原理图补画导线。
  * 模块在调用时才加载，避免常驻内存。
  */
 export async function AutoWirePlacerPCB(): Promise<void> {
 	const { placeWires } = await import('./js/autoWire/index.js');
 	await placeWires('PCB');
+}
+
+/**
+ * 创建导线 · 来自网表
+ *
+ * 读用户配置里的网表缓存（由下面两个「更新网表缓存」入口维护），不弹文件框；
+ * 缓存为空时会提示先去哪个菜单更新。
+ */
+export async function AutoWirePlacerNET(): Promise<void> {
+	const { placeWires } = await import('./js/autoWire/index.js');
+	await placeWires('NET');
+}
+
+/** 创建导线 · 从 PCB 更新网表缓存（切到 PCB 取整份 .enet，写完切回原理图） */
+export async function UpdateNetlistCacheFromPCB(): Promise<void> {
+	const { updateCachedNetlistFromPCB } = await import('./js/autoWire/netlistSync.js');
+	await updateCachedNetlistFromPCB();
+}
+
+/** 创建导线 · 从文件更新网表缓存（弹文件框选 .enet，不动当前文档） */
+export async function UpdateNetlistCacheFromFile(): Promise<void> {
+	const { updateCachedNetlistFromFile } = await import('./js/autoWire/netlistSync.js');
+	await updateCachedNetlistFromFile();
+}
+
+/** 创建导线 · 清空网表缓存 */
+export async function ClearNetlistCache(): Promise<void> {
+	const { clearCachedNetlist } = await import('./js/autoWire/netlistSync.js');
+	await clearCachedNetlist();
 }

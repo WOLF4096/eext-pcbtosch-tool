@@ -1,9 +1,16 @@
 /**
  * 狼黑工具 · PCB 转 原理图（独立版）页面样式
  *
- * 本文件由主仓库（狼黑工具）的 `iframe/css/common.css` 裁剪而来：
- * 只保留 `iframe/PcbToSch.html` 这一个页面真正用到的规则 —— 删掉了其余页面
- * 的专属段落与没人引用的通用组件，改版时不要直接从主仓库整份覆盖回来。
+ * 本文件只服务 `iframe/PcbToSch.html` 这一个页面：每条规则都对应页面上真实存在的
+ * 元素或 JS 运行时会加的类名，没有为「将来可能用到」预留的段落。
+ *
+ * 已核对过的引用来源：
+ *   - HTML：`.app` `.p2s-*` `.btn-secondary` `.status-bar` `.status-text` `.progress-bg`；
+ *   - JS（pcb-to-sch/index.js）：`.grid-row` `.row-cell` `.manual-input` `.row-error`；
+ *   - JS（ui/statusBar.js）：在 `.status-text` / `.progress-bg` 上追加
+ *     `accent` `success` `warning` `error` `info` 五个后缀类（这些后缀本身不需要规则，
+ *     只用于将来扩展，写在这里是为了说明为什么找不到它们）；
+ *   - 「感觉不错？」浮层的样式由 `js/src/ui/rewardDialog.js` 自带，不在本文件内。
  *
  * 约定：
  *   1. HTML 里不写 <style> 与 style="..."（只有 JS 运行时改尺寸/进度时才写内联）。
@@ -11,6 +18,7 @@
  *      这类内联值，改名会静默失效。
  *   3. `.hidden` 必须留在文件最末：页面段落里有 display:grid/flex 的元素，
  *      要靠「后出现」压住它，同时又要让 JS 写的 inline style 能覆盖它。
+ *   4. 裁剪后用 `temp/css-audit.mjs` 拍计算样式快照比对，不靠肉眼判断。
  *
  * 目录：
  *   一、设计变量          五、按钮与表单控件
@@ -30,14 +38,11 @@
 	/* —— 背景 —— */
 	--vscode-bg: #1e1e1e;
 	--vscode-panel: #252526;
-	--vscode-panel-2: #2d2d30;
 	--vscode-list-hover: #2a2d2e;
-	--vscode-active: #37373d;
 	--vscode-input-bg: #3c3c3c;
 
 	/* —— 边框与焦点 —— */
 	--vscode-border: #3c3c3c;
-	--vscode-border-strong: #4a4a4a;
 	--vscode-focus: #007fd4;
 
 	/* —— 文本 —— */
@@ -48,8 +53,6 @@
 
 	/* —— 强调 —— */
 	--vscode-accent: #007acc;
-	--vscode-accent-hover: #0098ff;
-	--vscode-link: #3794ff;
 
 	/* —— 按钮 —— */
 	--vscode-button-bg: #0e639c;
@@ -60,15 +63,7 @@
 	--vscode-disabled-bg: #4d4d4d;
 
 	/* —— 语义色 —— */
-	--vscode-success: #89d185;
-	--vscode-success-fill: #16a34a;
-	--vscode-success-fill-hover: #15803d;
-	--vscode-warning: #cca700;
-	--vscode-warning-text: #d7ba7d;
 	--vscode-error: #f48771;
-	--vscode-danger: #c94a4a;
-	--vscode-danger-hover: #d15a5a;
-	--vscode-change: #4caf50;
 
 	/* —— 滚动条 —— */
 	--vscode-scrollbar: #424242;
@@ -77,15 +72,11 @@
 	/* —— 代码 / 数据配色 —— */
 	--vscode-syntax-keyword: #569cd6;
 	--vscode-syntax-string: #ce9178;
-	--vscode-syntax-type: #4ec9b0;
-	--vscode-syntax-number: #b5cea8;
-	--vscode-chart-rest: #b0b0b0;
 
 	/* —— 排版与尺寸（统一节奏：控件 24、工具栏 38、状态栏 24） —— */
 	--vscode-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--vscode-font-mono: Consolas, 'Courier New', monospace;
 	--vscode-radius: 2px;
-	--vscode-radius-lg: 4px;
 	--vscode-ctl: 24px;
 	--vscode-toolbar: 38px;
 	--vscode-status: 24px;
@@ -115,28 +106,9 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3,
-h4,
-p,
-ol,
-ul {
+/* 页面里唯一的标题元素就是顶部工具栏的 h1 */
+h1 {
 	margin: 0;
-}
-
-ol,
-ul {
-	padding-left: 1.4em;
-}
-
-a {
-	color: var(--vscode-link);
-	text-decoration: none;
-}
-
-a:hover {
-	text-decoration: underline;
 }
 
 /* 注：`.hidden` 定义在文件末尾 —— 页面段落里有 display:grid/flex 的元素
@@ -189,8 +161,7 @@ a:hover {
 /* ==================================================================
  * 五、按钮与表单控件
  * ================================================================== */
-button,
-.btn {
+button {
 	display: inline-flex;
 	flex: 0 0 auto;
 	align-items: center;
@@ -209,24 +180,21 @@ button,
 	transition: background-color 0.1s;
 }
 
-button:hover:not(:disabled),
-.btn:hover:not(:disabled) {
+button:hover:not(:disabled) {
 	background-color: var(--vscode-button-hover);
 }
 
-button:active:not(:disabled),
-.btn:active:not(:disabled) {
+button:active:not(:disabled) {
 	background-color: var(--vscode-button-active);
 }
 
-button:disabled,
-.btn:disabled {
+button:disabled {
 	background-color: var(--vscode-disabled-bg);
 	color: var(--vscode-text-disabled);
 	cursor: not-allowed;
 }
 
-/** 次要操作：刷新 / 粘贴 / 导出 / 取消 */
+/** 次要操作：加载数据 / 构建源码 / 导出表格 / 导出网络 */
 .btn-secondary {
 	background-color: var(--vscode-button-secondary);
 	color: var(--vscode-text);
@@ -237,14 +205,8 @@ button:disabled,
 	color: var(--vscode-text-bright);
 }
 
-/* ---------- 表单控件 ---------- */
-input[type='text'],
-input[type='number'],
-input[type='date'],
-input[type='search'],
-input[type='password'],
-select,
-textarea {
+/* ---------- 表单控件（本页只用到文本框 + 勾选框 + 单选框） ---------- */
+input[type='text'] {
 	min-width: 0;
 	height: var(--vscode-ctl);
 	padding: 0 6px;
@@ -258,50 +220,12 @@ textarea {
 	transition: border-color 0.1s;
 }
 
-textarea {
-	width: 100%;
-	height: auto;
-	padding: 4px 6px;
-	line-height: 1.45;
-	resize: none;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
+input:focus {
 	border-color: var(--vscode-focus);
 }
 
-input::placeholder,
-textarea::placeholder {
+input::placeholder {
 	color: var(--vscode-text-muted);
-}
-
-input:disabled,
-select:disabled,
-textarea:disabled {
-	color: var(--vscode-text-disabled);
-	opacity: 0.6;
-}
-
-select {
-	cursor: pointer;
-}
-
-select option {
-	background-color: var(--vscode-panel);
-	color: var(--vscode-text);
-}
-
-/* 数值框去掉原生上下箭头：表格里 4px 宽的小格子放不下 */
-input[type='number']::-webkit-inner-spin-button,
-input[type='number']::-webkit-outer-spin-button {
-	-webkit-appearance: none;
-	margin: 0;
-}
-
-input[type='number'] {
-	-moz-appearance: textfield;
 }
 
 /* 勾选框 / 单选框统一品牌色 */
@@ -315,33 +239,7 @@ input[type='radio'] {
 	cursor: pointer;
 }
 
-/* 各类 range 滑块的统一样式 */
-input[type='range'] {
-	width: 100%;
-	height: 14px;
-	margin: 0;
-	accent-color: var(--vscode-focus);
-	background: transparent;
-	cursor: pointer;
-}
-
-input[type='color'] {
-	width: 100%;
-	height: 24px;
-	padding: 0;
-	background-color: var(--vscode-input-bg);
-	border: 1px solid var(--vscode-border);
-	border-radius: var(--vscode-radius);
-	cursor: pointer;
-}
-
-/* label 统一成「勾选框 + 文字」的横排 */
-label {
-	cursor: pointer;
-}
-
-/** 出错行 */
-.row-error > td,
+/** 出错行（构建源码时缺符号的元件） */
 .row-error {
 	background-color: rgba(241, 76, 76, 0.1) !important;
 	color: var(--vscode-error) !important;
@@ -374,20 +272,7 @@ label {
 	color: var(--vscode-text-bright);
 }
 
-.status-bar.warning {
-	color: var(--vscode-warning-text);
-}
-
-.status-bar.success {
-	color: var(--vscode-change);
-}
-
-.status-bar.error {
-	color: var(--vscode-error);
-}
-
-.progress-bg,
-.progress-fill {
+.progress-bg {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -586,7 +471,7 @@ label {
  * 八、工具类（放文件最末，保证能覆盖前面的组件 display）
  * ================================================================== */
 
-/** JS 通过 classList 切换、或 HTML 里标初始隐藏的元素 */
+/** 通用隐藏类：本页当前没有元素用它，留着是为了让后续加 `class="hidden"` 时仍然生效 */
 .hidden {
 	display: none;
 }
