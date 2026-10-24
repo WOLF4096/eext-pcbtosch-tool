@@ -12,6 +12,8 @@
 
 工具只在你自己的电脑上运行，读取的都是本地工程，不联网、不上传。
 
+![界面](images/img.png)
+
 ---
 
 ## 一、安装
@@ -178,4 +180,4 @@ PCB 还没保存，或者刚切过去还没加载完。保存 PCB 后再点一�
 
 ---
 
-想改代码、自己构建、或者把功能合并回主项目，请看 [README.DEV.md](README.DEV.md)（开发者文档）。
+想改代码、自己构建、或者把功能合并回主项目，请看 [README.DEV.md](https://github.com/WOLF4096/eext-pcbtosch-tool/blob/master/README.DEV.md)（开发者文档）。

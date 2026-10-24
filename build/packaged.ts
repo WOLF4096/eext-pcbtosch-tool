@@ -4,6 +4,7 @@ import ignore from 'ignore';
 import JSZip from 'jszip';
 
 import * as extensionConfig from '../extension.json';
+import { assertPackContent } from './assert-content';
 
 /**
  * 将多行字符串拆分成字符串数组
@@ -81,6 +82,10 @@ function main() {
 			folderList.push(filepath.replace(/\\/g, '/'));
 		}
 	}
+
+	// 写 zip 之前先校验清单：少了产物 / 多了无关文件都会在这里失败，
+	// 避免打出「能装但白屏」的坏包。详见 assert-content.ts。
+	assertPackContent(fileList, path.join(__dirname, '..'));
 
 	const zip = new JSZip();
 	for (const file of fileList) {

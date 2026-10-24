@@ -1,7 +1,7 @@
 /*
  * 开发者：WOLF4096
  * 辅助开发：DeepSeek-V4.1-Flash
- * 本工具为非官方第三方开源扩展，与嘉立创 / EasyEDA 官方无隶属关系
+ * 本工具为非官方第三方开源扩展
  *
  * 只打包扩展入口（`dist/index.js`）。界面页面的源码在 `iframe/js/src/`，
  * 由独立的 `npm run build:iframe` 打包成 `iframe/js/app/PcbToSch.js`，不走这里。
@@ -30,7 +30,7 @@ export default {
 		js: `/*!
  * 开发者：WOLF4096
  * 辅助开发：DeepSeek-V4.1-Flash
- * 本工具为非官方第三方开源扩展，与嘉立创 / EasyEDA 官方无隶属关系
+ * 本工具为非官方第三方开源扩展
  */`,
 	},
 	define: {},

@@ -3,7 +3,7 @@ import antfu from '@antfu/eslint-config';
 /*
  * 开发者：WOLF4096
  * 辅助开发：DeepSeek-V4.1-Flash
- * 本工具为非官方第三方开源扩展，与嘉立创 / EasyEDA 官方无隶属关系
+ * 本工具为非官方第三方开源扩展
  *
  * ignores 里那两个例外目录是有意为之：
  *   - `iframe/js/**`：页面源码与产物来自「狼黑工具」主仓（ESM + 4 空格缩进的 prettier 风格），

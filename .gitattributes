@@ -1,1 +1,12 @@
+# 行尾统一：仓库与工作区一律 LF。
+#
+# 为什么必须写死：本机 core.autocrlf=true，没有这条规则时克隆/检出会把文本文件
+# 全量转成 CRLF，源码就无法与主仓（pro-api-sdk）保持逐字节一致，
+# 依赖字节比对的同步检查会失真。
+* text=auto eol=lf
+
+# 二进制：交给 git 按内容判断，避免被当文本改写
+*.png binary
+*.eext binary
+
 *.json linguist-language=JSON-with-Comments

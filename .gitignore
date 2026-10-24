@@ -1,9 +1,28 @@
+# ============================================================
+# 与主仓（pro-api-sdk）保持一致：构建产物、IDE 私有配置、助手记忆一律不入库。
+# 产物由 `npm run build` 重建（build:iframe → compile → packaged），
+# 因此克隆后必须构建一次才能打包，见 README.DEV.md。
+# ============================================================
+
+# ---- 依赖与构建产物 ----
+/node_modules/
+/dist/
+/iframe/js/app/
+/coverage/
+
+# ---- 临时文件 / 日志 ----
+/temp/
+debug.log
+/.eslintcache
+
+# ---- 编辑器 / IDE 私有配置 ----
+/.idea/
 /.vscode/*
 !/.vscode/extensions.json
 !/.vscode/settings.json
-/coverage/
-/dist/
-/node_modules/
-/.eslintcache
-debug.log
-/temp/
+
+# ---- 助手工作记忆（本地上下文，不属于代码库）----
+/.workbuddy/
+
+# ---- 误建文件：文件名连空格一起被当成路径保存了下来 ----
+/npm run build.cmd

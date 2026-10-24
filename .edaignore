@@ -13,14 +13,15 @@
 /.editorconfig
 /.gitattributes
 /.gitignore
+/.edaignore
 /.npmrc
 /eslint.config.mjs
 /package-lock.json
 /package.json
 /tsconfig.json
+/README.DEV.md
 .eslintcache
 debug.log
 /.workbuddy/
-/images/img.png
 /temp/
 npm run build.cmd
