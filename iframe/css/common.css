@@ -57,6 +57,7 @@
 
 	/* —— 强调 —— */
 	--vscode-accent: #007acc;
+	--vscode-link: #3794ff;
 
 	/* —— 按钮 —— */
 	--vscode-button-bg: #0e639c;
@@ -81,6 +82,7 @@
 	--vscode-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--vscode-font-mono: Consolas, 'Courier New', monospace;
 	--vscode-radius: 2px;
+	--vscode-radius-lg: 4px;
 	--vscode-ctl: 24px;
 	--vscode-toolbar: 38px;
 	--vscode-status: 24px;
@@ -113,6 +115,20 @@ body {
 /* 页面里唯一的标题元素就是顶部工具栏的 h1 */
 h1 {
 	margin: 0;
+}
+
+ol,
+ul {
+	padding-left: 1.4em;
+}
+
+a {
+	color: var(--vscode-link);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
 }
 
 /* 注：`.hidden` 定义在文件末尾 —— 页面段落里有 display:grid/flex 的元素
