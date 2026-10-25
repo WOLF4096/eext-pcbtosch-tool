@@ -174,3 +174,17 @@ PCB 还没保存，或者刚切过去还没加载完。保存 PCB 后再点一�
 - 生成的结果可能不完整、也可能不准，尤其元件缺符号或网络没整理过的板子。**请自己核对**。
 - 这是第三方的开源扩展，和嘉立创 / EasyEDA 官方没有关系。
 - 许可：Apache License 2.0，见 [LICENSE](LICENSE)。
+
+---
+
+## 反馈与支持
+
+| 项目     | 信息                                                                     |
+| -------- | ------------------------------------------------------------------------ |
+| 作者主页 | [狼黑](https://github.com/WOLF4096)                                      |
+| 项目主页 | [PCB 转原理图](https://github.com/WOLF4096/eext-pcbtosch-tool)           |
+| 问题反馈 | [提交 Issue](https://github.com/WOLF4096/eext-pcbtosch-tool/issues)  |
+| 扩展主页 | [嘉立创 EDA 扩展广场](https://jlc-ext.com/item/darksteel/eext-pcbtosch-tool) |
+| 开源许可 | Apache-2.0                                                               |
+
+> 本工具为 **非官方** 第三方开源扩展。
